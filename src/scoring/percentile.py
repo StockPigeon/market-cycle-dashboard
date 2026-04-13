@@ -1,0 +1,70 @@
+"""
+Rolling historical percentile engine.
+Converts a current value into its percentile rank within the trailing
+`lookback_years` of history. This is the foundation of the scoring system.
+"""
+import numpy as np
+import pandas as pd
+from scipy import stats
+
+
+def historical_percentile(
+    series: pd.Series,
+    current_value: float,
+    lookback_years: int = 15,
+) -> float:
+    """
+    Return the percentile rank (0-100) of `current_value` within the
+    last `lookback_years` of `series`.
+
+    A value at the 80th percentile means it has been higher than 80% of
+    all observed values in the lookback window.
+    """
+    if series is None or series.empty:
+        return 50.0  # neutral fallback
+
+    cutoff = series.index[-1] - pd.DateOffset(years=lookback_years)
+    window = series[series.index >= cutoff].dropna()
+
+    if len(window) < 10:
+        # Not enough history — use all available data
+        window = series.dropna()
+
+    if len(window) < 2:
+        return 50.0
+
+    pct = stats.percentileofscore(window.values, current_value, kind="rank")
+    return round(float(pct), 1)
+
+
+def rolling_percentile_series(
+    series: pd.Series,
+    lookback_years: int = 15,
+    resample_freq: str = "MS",
+) -> pd.Series:
+    """
+    Compute the rolling historical percentile at each point in time.
+    Used to back-test the composite score history.
+    Each value = percentile of that observation within the preceding
+    `lookback_years` of data.
+
+    Returns a monthly series aligned to `resample_freq`.
+    """
+    if series is None or series.empty:
+        return pd.Series(dtype=float)
+
+    monthly = series.resample(resample_freq).last().dropna()
+    lookback_obs = lookback_years * 12  # approximate monthly observations
+
+    pcts = []
+    for i in range(len(monthly)):
+        start = max(0, i - lookback_obs)
+        window = monthly.iloc[start:i + 1]
+        if len(window) < 2:
+            pcts.append(50.0)
+        else:
+            val = window.iloc[-1]
+            pct = stats.percentileofscore(window.values, val, kind="rank")
+            pcts.append(round(float(pct), 1))
+
+    return pd.Series(pcts, index=monthly.index)
