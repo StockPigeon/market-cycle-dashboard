@@ -210,7 +210,7 @@ with st.expander("📊 Score Breakdown — how the composite is calculated", exp
 
     styled = (
         df_ind.style
-        .applymap(_score_color, subset=["Score"])
+        .map(_score_color, subset=["Score"])
         .format({"Score": "{:.1f}", "Contribution": "{:.2f}"}, na_rep="N/A")
     )
     st.dataframe(styled, use_container_width=True, hide_index=True, height=420)
@@ -238,7 +238,7 @@ with st.expander("📊 Score Breakdown — how the composite is calculated", exp
     df_cat = pd.DataFrame(cat_rows)
     styled_cat = (
         df_cat.style
-        .applymap(_score_color, subset=["Category Avg Score"])
+        .map(_score_color, subset=["Category Avg Score"])
         .format({
             "Category Avg Score": "{:.1f}",
             "Weighted Points": "{:.2f}",
