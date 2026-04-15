@@ -14,21 +14,19 @@ def historical_percentile(
     lookback_years: int = 15,
 ) -> float:
     """
-    Return the percentile rank (0-100) of `current_value` within the
-    last `lookback_years` of `series`.
+    Return the percentile rank (0-100) of `current_value` within all
+    available history of `series` (expanding window).
 
-    A value at the 80th percentile means it has been higher than 80% of
-    all observed values in the lookback window.
+    Using the full available history gives a consistent benchmark: a reading
+    that was extreme in 2007 scores the same whether you're computing it in
+    2007 or 2024. This keeps the gauge aligned with the composite history chart.
+
+    `lookback_years` is retained for signature compatibility but not used.
     """
     if series is None or series.empty:
         return 50.0  # neutral fallback
 
-    cutoff = series.index[-1] - pd.DateOffset(years=lookback_years)
-    window = series[series.index >= cutoff].dropna()
-
-    if len(window) < 10:
-        # Not enough history — use all available data
-        window = series.dropna()
+    window = series.dropna()
 
     if len(window) < 2:
         return 50.0
