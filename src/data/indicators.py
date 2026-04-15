@@ -142,6 +142,34 @@ def load_nfci() -> IndicatorResult:
     )
 
 
+def load_m2_yoy() -> IndicatorResult:
+    s, err = _safe(fred.fetch_m2_yoy)
+    return _make_result(
+        s,
+        id="m2_yoy",
+        name="M2 Money Supply (YoY%)",
+        category="credit",
+        description=(
+            "M2 money supply year-over-year % change. "
+            "Rapid growth = excess liquidity flooding into risk assets. "
+            "2020-21 saw ~25% YoY growth that fuelled the SPAC/meme stock boom."
+        ),
+        units="%",
+        higher_is_riskier=True,
+        format_str="{:+.1f}",
+        source_url="https://fred.stlouisfed.org/series/M2SL",
+        source_name="FRED · M2SL",
+        scoring_note=(
+            "Higher M2 growth = higher danger. "
+            "Excess liquidity provides the fuel for speculative booms — cheap money "
+            "floods into equities, real estate, and alternative assets. "
+            "Conversely, M2 contraction (2022-23) accompanied the equity bear market. "
+            "Score = percentile rank within 15-year history."
+        ),
+        error=err,
+    )
+
+
 def load_ffr_roc() -> IndicatorResult:
     s, err = _safe(fred.fetch_feds_rate_roc)
     return _make_result(
@@ -437,6 +465,62 @@ def load_consumer_sentiment() -> IndicatorResult:
     )
 
 
+def load_put_call_ratio() -> IndicatorResult:
+    s, err = _safe(mkt.fetch_put_call_ratio)
+    return _make_result(
+        s,
+        id="put_call",
+        name="Put/Call Ratio",
+        category="sentiment",
+        description=(
+            "CBOE Equity Put/Call ratio (monthly average). "
+            "Low = investors flooding into calls = complacency = danger. "
+            "High = put buying = fear/hedging = potential opportunity."
+        ),
+        units="ratio",
+        higher_is_riskier=False,
+        format_str="{:.2f}",
+        source_url="https://www.cboe.com/data/historical-options-data/",
+        source_name="CBOE Equity Put/Call Archive",
+        scoring_note=(
+            "Lower P/C = higher danger (inverted). "
+            "When investors pile into calls (low put/call ratio), it signals excessive optimism "
+            "and speculative positioning — a hallmark of late-cycle behaviour. "
+            "In 2021 the ratio hit multi-year lows as retail flooded into meme stocks and SPACs. "
+            "Score = 100 minus percentile rank within 15-year history."
+        ),
+        error=err,
+    )
+
+
+def load_business_applications() -> IndicatorResult:
+    s, err = _safe(fred.fetch_business_applications_yoy)
+    return _make_result(
+        s,
+        id="biz_apps",
+        name="Business Formations (YoY%)",
+        category="sentiment",
+        description=(
+            "Total US business applications YoY% change. "
+            "Hit all-time highs in 2021 during the SPAC/startup boom — "
+            "a classic sign of speculative euphoria driving capital formation."
+        ),
+        units="%",
+        higher_is_riskier=True,
+        format_str="{:+.1f}",
+        source_url="https://fred.stlouisfed.org/series/BABATOTALSAUS",
+        source_name="FRED · BABATOTALSAUS",
+        scoring_note=(
+            "Higher YoY growth = higher danger. "
+            "A surge in business formations driven by easy money and euphoria "
+            "(SPACs, startups, side hustles) is a late-cycle signal — not genuine "
+            "productive investment. When this reverses, it signals tightening conditions. "
+            "Score = percentile rank within 15-year history."
+        ),
+        error=err,
+    )
+
+
 def load_aaii() -> IndicatorResult:
     s, err = _safe(aaii.fetch_aaii_bull_bear_spread)
     return _make_result(
@@ -534,6 +618,7 @@ LOADERS = [
     load_hy_spreads,
     load_hy_ig_ratio,
     load_nfci,
+    load_m2_yoy,
     load_ffr_roc,
     load_gdp,
     load_unemployment,
@@ -545,6 +630,8 @@ LOADERS = [
     load_vix,
     load_consumer_sentiment,
     load_aaii,
+    load_put_call_ratio,
+    load_business_applications,
     load_yield_curve,
     load_corp_profits,
 ]

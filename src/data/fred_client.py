@@ -224,3 +224,21 @@ def fetch_hy_ig_ratio() -> pd.Series:
     ratio = combined.iloc[:, 0] / combined.iloc[:, 1]
     ratio.name = "HY_IG_RATIO"
     return ratio
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_m2_yoy() -> pd.Series:
+    """M2 Money Supply YoY% change — rapid growth = excess liquidity = speculation fuel."""
+    m2 = fetch_series("M2SL", start="1990-01-01")
+    yoy = m2.pct_change(12) * 100
+    yoy.name = "M2_YOY"
+    return yoy.dropna()
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_business_applications_yoy() -> pd.Series:
+    """Total Business Applications YoY% — spikes during speculative formation booms."""
+    apps = fetch_series("BABATOTALSAUS", start="2004-01-01")
+    yoy = apps.pct_change(12) * 100
+    yoy.name = "BIZAPPS_YOY"
+    return yoy.dropna()

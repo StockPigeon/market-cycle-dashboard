@@ -41,6 +41,9 @@ CATEGORY_MAP: Dict[str, str] = {
     "aaii": "sentiment",
     "yield_curve": "earnings",
     "corp_profits": "earnings",
+    "m2_yoy": "credit",
+    "put_call": "sentiment",
+    "biz_apps": "sentiment",
 }
 
 
