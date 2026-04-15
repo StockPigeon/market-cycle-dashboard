@@ -166,7 +166,7 @@ def build_composite_history(indicators: List[IndicatorResult]) -> pd.Series:
         cat = CATEGORY_MAP.get(ind.id, ind.category)
         if ind.series is None or cat not in category_series:
             continue
-        pct_series = rolling_percentile_series(ind.series, lookback_years=15)
+        pct_series = rolling_percentile_series(ind.series, lookback_years=15, expanding=True)
         if ind.higher_is_riskier:
             danger_series = pct_series
         else:

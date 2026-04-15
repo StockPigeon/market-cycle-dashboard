@@ -41,12 +41,19 @@ def rolling_percentile_series(
     series: pd.Series,
     lookback_years: int = 15,
     resample_freq: str = "MS",
+    expanding: bool = False,
 ) -> pd.Series:
     """
     Compute the rolling historical percentile at each point in time.
     Used to back-test the composite score history.
     Each value = percentile of that observation within the preceding
-    `lookback_years` of data.
+    `lookback_years` of data (or all available history if expanding=True).
+
+    expanding=True uses an expanding window — each point is ranked against
+    all data from the start of the series up to that date. This gives a more
+    stable baseline for the composite history chart: e.g. 2006-07 credit
+    tightness is judged against the full 1990-2007 history rather than just
+    1991-2006, making late-cycle extremes register before recessions.
 
     Returns a monthly series aligned to `resample_freq`.
     """
@@ -58,7 +65,7 @@ def rolling_percentile_series(
 
     pcts = []
     for i in range(len(monthly)):
-        start = max(0, i - lookback_obs)
+        start = 0 if expanding else max(0, i - lookback_obs)
         window = monthly.iloc[start:i + 1]
         if len(window) < 2:
             pcts.append(50.0)
