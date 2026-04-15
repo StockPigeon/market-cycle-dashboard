@@ -186,11 +186,19 @@ def build_composite_history(indicators: List[IndicatorResult]) -> pd.Series:
 
     # Weighted composite — align on common dates
     all_series = []
+    weight_list = []
     for cat, weight in CATEGORY_WEIGHTS.items():
         if cat in cat_avg_series:
             all_series.append(cat_avg_series[cat] * weight)
+            weight_list.append(weight)
 
-    composite = pd.concat(all_series, axis=1).sum(axis=1)
+    composite_df = pd.concat(all_series, axis=1)
+
+    # Normalise by the sum of weights actually present for each date so that
+    # months where some categories have no data (e.g. early in the series)
+    # still produce a valid 0-100 score rather than being understated.
+    present_weight = composite_df.notna().mul(weight_list).sum(axis=1).clip(lower=0.01)
+    composite = composite_df.sum(axis=1, skipna=True) / present_weight
     composite.name = "Composite Score"
 
     # Restrict to 2005 onwards where data coverage is reasonable

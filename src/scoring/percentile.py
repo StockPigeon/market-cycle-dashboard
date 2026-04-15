@@ -58,7 +58,10 @@ def rolling_percentile_series(
     if series is None or series.empty:
         return pd.Series(dtype=float)
 
-    monthly = series.resample(resample_freq).last().dropna()
+    monthly = series.resample(resample_freq).last()
+    # Forward-fill up to 6 months so quarterly/lagging series (GDP, corp profits,
+    # Buffett) contribute to recent months rather than going NaN between releases.
+    monthly = monthly.ffill(limit=6).dropna()
     lookback_obs = lookback_years * 12  # approximate monthly observations
 
     pcts = []
