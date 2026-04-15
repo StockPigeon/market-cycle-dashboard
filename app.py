@@ -157,6 +157,97 @@ with summary_col:
 
 st.markdown("<hr style='border-color:#1e2330;margin:14px 0;'>", unsafe_allow_html=True)
 
+# ── Score Breakdown Table ─────────────────────────────────────────────────────
+with st.expander("📊 Score Breakdown — how the composite is calculated", expanded=False):
+    from src.scoring.cycle_score import CATEGORY_MAP, CATEGORY_WEIGHTS
+
+    CAT_LABELS = {
+        "credit":     "Credit & Liquidity",
+        "economy":    "Economic Activity",
+        "valuations": "Valuations",
+        "sentiment":  "Sentiment & Psychology",
+        "earnings":   "Earnings & Yield Curve",
+    }
+
+    # ── Indicator-level table ──────────────────────────────────────────────
+    ind_rows = []
+    for cat, weight in CATEGORY_WEIGHTS.items():
+        cat_inds = by_cat.get(cat, [])
+        valid = [i for i in cat_inds if i.score is not None]
+        n = len(valid) if valid else 1
+        cat_avg = sum(i.score for i in valid) / n if valid else 50.0
+
+        for ind in cat_inds:
+            if ind.score is not None:
+                ind_contrib = round(ind.score / n * weight, 2)
+            else:
+                ind_contrib = None
+            ind_rows.append({
+                "Category": CAT_LABELS[cat],
+                "Indicator": ind.name,
+                "Value": (
+                    ind.format_str.format(ind.current_value) + " " + ind.units
+                    if ind.current_value is not None else "N/A"
+                ),
+                "Score": ind.score,
+                "Phase": ind.phase or "N/A",
+                "Contribution": ind_contrib,
+            })
+
+    df_ind = pd.DataFrame(ind_rows)
+
+    def _score_color(val):
+        if pd.isna(val):
+            return "color: #666"
+        if val < 25:
+            return "color: #4CAF50"
+        elif val < 50:
+            return "color: #8BC34A"
+        elif val < 75:
+            return "color: #FF9800"
+        else:
+            return "color: #F44336"
+
+    styled = (
+        df_ind.style
+        .applymap(_score_color, subset=["Score"])
+        .format({"Score": "{:.1f}", "Contribution": "{:.2f}"}, na_rep="N/A")
+    )
+    st.dataframe(styled, use_container_width=True, hide_index=True, height=420)
+
+    # ── Category rollup ────────────────────────────────────────────────────
+    st.markdown("<div style='margin-top:12px;font-size:12px;color:#888;'>Category rollup → composite</div>",
+                unsafe_allow_html=True)
+    cat_rows = []
+    for cat, weight in CATEGORY_WEIGHTS.items():
+        cat_inds = by_cat.get(cat, [])
+        valid = [i for i in cat_inds if i.score is not None]
+        cat_avg = sum(i.score for i in valid) / len(valid) if valid else 50.0
+        cat_rows.append({
+            "Category": CAT_LABELS[cat],
+            "Weight": f"{weight*100:.0f}%",
+            "Category Avg Score": round(cat_avg, 1),
+            "Weighted Points": round(cat_avg * weight, 2),
+        })
+    cat_rows.append({
+        "Category": "COMPOSITE",
+        "Weight": "100%",
+        "Category Avg Score": None,
+        "Weighted Points": reading.composite_score,
+    })
+    df_cat = pd.DataFrame(cat_rows)
+    styled_cat = (
+        df_cat.style
+        .applymap(_score_color, subset=["Category Avg Score"])
+        .format({
+            "Category Avg Score": "{:.1f}",
+            "Weighted Points": "{:.2f}",
+        }, na_rep="—")
+    )
+    st.dataframe(styled_cat, use_container_width=True, hide_index=True)
+
+st.markdown("<hr style='border-color:#1e2330;margin:14px 0;'>", unsafe_allow_html=True)
+
 # ── Credit & Liquidity ────────────────────────────────────────────────────────
 render_section_header(
     "Credit & Liquidity",
